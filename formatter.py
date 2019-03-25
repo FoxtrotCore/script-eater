@@ -72,6 +72,14 @@ def grab_from_unprocessed(index):
         raise 'index not in range of existing unprocessed lines'
         exit(1)
 
+def grab_filename_from_num(num):
+    suffix = '_temp.txt'
+
+    if num < 10:
+        return '00' + str(num) + suffix
+    elif num < 100:
+        return '0' + str(num) + suffix
+
 def main():
     global debug
     global config_path
@@ -86,11 +94,6 @@ def main():
         print(debug)
     except:
         debug = False
-
-    if episode_number < 10:
-        episode_number = '00' + str(episode_number)
-    elif episode_number < 100:
-        episode_number = '0' + str(episode_number)
 
     if check_directory("/", config_path.split('/')):
         config_path = '/' + config_path + '/config.json'
@@ -109,11 +112,13 @@ def main():
     check_directory('/', config['formatted-transcripts-path'].split('/'))
 
     # Read and format the file put it in [lines]
-    raw_file = open(config['raw-transcripts-path'] + str(episode_number) + '_temp.txt','r')
+    raw_file = open(config['raw-transcripts-path'] + grab_filename_from_num(episode_number),'r')
+
     for i in raw_file:
         i = i.strip()
         unprocessed_lines.append(i)
         if debug: print('Adding line on heap of size ' + str(len(unprocessed_lines)) + '\t:\t' + i , end='\n', flush=True)
+
     raw_file.close()
 
     line_count = len(unprocessed_lines)
