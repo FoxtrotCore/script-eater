@@ -43,18 +43,21 @@ def load_config(filename):
 def save_config(filename):
     global config
 
+    if(config['debug']):
+        say(2, json.dumps(config))
+
     config_file = open(filename, mode='w', buffering=-1, encoding=None, errors=None, newline='\n', closefd=True)
     config_file.write(json.dumps(config))
     config_file.close()
 
 def update_default_bot_status():
     global config
-    global prefix
-    global bot_status
-    bot_status = prefix + "help" + " | " + config['bot-status']
+    global active_bot_status
+    active_bot_status = config['prefix'] + "help" + " | " + config['bot-status']
 
 def handle_forced_exit():
     global client
+    global config_path
 
     print('\n')
     say(0, 'A signal was received to shutdown the bot!')
@@ -63,16 +66,16 @@ def handle_forced_exit():
     sys.exit(0)
 
 def message_prefix(message):
-    return message[0:len(prefix)]
+    return message[0:len(config['prefix'])]
 
 def message_suffix(message):
-    return message[len(prefix):].split(' ')[0]
+    return message[len(config['prefix']):].split(' ')[0]
 
 def message_argument(message):
-    return message[len(prefix):].split(' ')[1]
+    return message[len(config['prefix']):].split(' ')[1]
 
 def is_command(message):
-    return (message_prefix(message) == prefix)
+    return (message_prefix(message) == config['prefix'])
 
 def get_command_map(message):
     index = 0
@@ -138,25 +141,24 @@ async def resolve_confirmation(message, question):
 
 async def usage(message):
     global client
-    global debug
+    global config
 
     help_message = discord.Embed(title='Script Eater Help', url=ftf_website, description='Command info and details.', color=0x58ff00)
     help_message.set_author(name='Script Eater', url=ftf_website, icon_url=ftf_logo_url)
     help_message.set_thumbnail(url=ftf_logo_url)
 
     for command in commands.keys():
-        help_message.add_field(name=str(prefix + command), value=str(commands[command]), inline=False)
+        help_message.add_field(name=str(config['prefix'] + command), value=str(commands[command]), inline=False)
 
-    if(debug):
+    if(config['debug']):
         say(2, '' + str(message.channel) + '\t' + str(message.server) + '\t' + str(message.mention_everyone))
 
     await client.delete_message(message)
     await client.send_message(message.channel, content=None, embed=help_message)
 
 async def set_new_prefix(message):
+    global config
     global client
-    global prefix
-    global debug
 
     try:
         argument = message_argument(message.content)
@@ -172,16 +174,16 @@ async def set_new_prefix(message):
         say(3, "No response was given!\n\tTerminating the thread early!")
         await client.send_message(message.channel, content='**No response was given! Canceling request...**')
     elif(resolution == True):
-        prefix = argument
+        config['prefix'] = argument
         update_default_bot_status()
         await client.send_message(message.channel, content='**Changed prefix to: \"' + argument + "\"!**")
     elif(resolution == False):
-        await client.send_message(message.channel, content='**Keeping prefix as ' + prefix + '**')
+        await client.send_message(message.channel, content='**Keeping prefix as ' + config['prefix'] + '**')
 
     await client.delete_message(message)
 
 async def format_script(message):
-    asyncio.sleep(10)
+    await asyncio.sleep(10)
     return
 
 async def bad_command(message):
@@ -202,8 +204,8 @@ bot_token = os.getenv('SCRIPT_EATER_TOKEN')
 #
 # Stuff to use in runtime
 #
-debug = False
 response_timeout = 10.0 # Seconds
+active_bot_status = ''
 confirm_emoji = '✅'
 deny_emoji = '⛔'
 emojis = []
@@ -219,37 +221,38 @@ update_default_bot_status()
 
 @client.event
 async def on_ready():
-    global bot_status
+    global config
 
     say(0, 'Client logged in as the user ' + str(client.user) + '\n\tID: ' + str(client.user.id) + '\n\tBOT: ' + str(client.user.bot) + '\n\tDisplay Name: ' + str(client.user.display_name))
     load_servers()
     load_emojis()
-    await set_status(bot_status, discord.Status.idle)
+    await set_status(active_bot_status, discord.Status.idle)
 
 @client.event
 async def on_message(message):
-    global bot_status
+    global config
 
     # Check if message has correct prefix
     if(is_command(message.content)):
-        # Consle
+        # Console confirmation that a relevant command was received
         say(0, 'Timestamp(' + str(message.timestamp) + ') UserID(' + str(message.author) + ') Message(' + message.content + ')')
 
+        # Get the action map of the command suffix
         map = get_command_map(message.content)
 
-        if(map == 0):
+        if(map == 0): # help
             await set_status('Prepairing help...', discord.Status.dnd)
             await usage(message)
-        elif(map == 1):
+        elif(map == 1): # prefix
             await set_status('Waiting for response...', discord.Status.dnd)
             await set_new_prefix(message)
-        elif(map == 2):
+        elif(map == 2): # format
             await set_status('Formatting script...', discord.Status.dnd)
             await format_script(message)
         else:
             await bad_command(message)
 
-        await set_status(bot_status, discord.Status.idle)
+        await set_status(active_bot_status, discord.Status.idle)
 
 client.run(bot_token)
 signal.signal(signal.SIGINT, handle_forced_exit())
