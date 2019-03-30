@@ -65,6 +65,7 @@ def handle_forced_exit():
 
     print('\n')
     say(0, 'A signal was received to shutdown the bot!')
+    save_admins()
     save_config(config_path)
     client.logout()
     sys.exit(0)
@@ -85,7 +86,7 @@ def is_admin(user_id):
     global admins
 
     for i in admins:
-        if(user_id == i):
+        if(user_id == i.id):
             return True
     return False
 
@@ -106,14 +107,35 @@ def load_servers():
     for i in client.servers:
         print('\t\"' + i.name + '\" in ' + str(i.region) + ' with ' + str(len(i.members)) + ' people')
 
-def load_admins():
+async def load_admins():
     global client
     global config
     global admins
 
+    if(admins != None or admins  != []):
+        del admins
+        admins = []
+
+    say(1, "Adding the following users as global admins: ")
     for i in config['admins']:
-        admins.append(client.get_user_info(i))
-        # say(1, "Adding " + str(client.get_user_info(i).name))
+        user = await client.get_user_info(i)
+        admins.append(user)
+        print("\t\t* @" + user.name + "#" + user.discriminator)
+
+def save_admins():
+    global config
+    global admins
+
+    if(len(admins) > 0):
+        del config['admins']
+        config['admins'] = []
+
+        for user in admins:
+            config['admins'].append(user.id)
+
+        say(1, "Saved a total of " + str(len(config['admins'])) + " user ids to the admin list!")
+    else:
+        say(3, "Attempted to save an empty admin list!\n\tSkipping this process!")
 
 def load_emojis():
     global client
@@ -157,6 +179,80 @@ async def resolve_confirmation(message, question):
     else:
         say(3, "Reaction confirmation could not resolve!")
         raise "REACTION CONFIRMATION COULD NOT RESLOVE"
+
+async def add_admin(message):
+    global client
+    global config
+    global admins
+
+    if(is_admin(message.author.id)):
+        mentions = message.mentions
+        if (config['debug']): say(2, "User Mentions: " + str(mentions))
+
+        for user in mentions:
+            if(is_admin(user.id)):
+                await client.send_message(message.channel, content='** <@' + user.id + "> is already a global admin!**")
+            else:
+                resolution = await resolve_confirmation(message, "**Add admin: \"" + user.name + "#" + user.discriminator + "\"?**")
+
+                if(resolution == None):
+                    say(3, "No response was given!\n\tTerminating the thread early!")
+                    await client.send_message(message.channel, content='**No response was given! Canceling request...**')
+                elif(resolution == True):
+                    admins.append(user)
+                    await client.send_message(message.channel, content='**Added  <@' + user.id + "> as a global admin!**")
+                elif(resolution == False):
+                    await client.send_message(message.channel, content='**Canceling addition!**')
+    else:
+        await client.send_message(message.channel, content='**Must be an admin to do this!**')
+
+    await client.delete_message(message)
+
+async def get_admins(message):
+    global client
+    global admins
+
+    admin_list = discord.Embed(title='List of Global Script Eater Admins', url=ftf_website, description='These user can run the admin exclusive bot commands.', color=0xecff00)
+    admin_list.set_author(name='Script Eater', url=ftf_website, icon_url=ftf_logo_url)
+    admin_list.set_thumbnail(url=ftf_logo_url)
+
+    if(len(admins) > 0):
+        for user in admins:
+            admin_list.add_field(name=(user.name + "#" + user.discriminator), value=str(user.id), inline=False)
+
+        await client.send_message(message.channel, content=None, embed=admin_list)
+    else:
+        await client.send_message(message.channel, content='**There are no global admins! God help you.**')
+
+    await client.delete_message(message)
+
+async def remove_admin(message):
+    global client
+    global config
+    global admins
+
+    if(is_admin(message.author.id)):
+        mentions = message.mentions
+        if (config['debug']): say(2, "User Mentions: " + str(mentions))
+
+        for user in mentions:
+            if(is_admin(user.id)):
+                resolution = await resolve_confirmation(message, "**Remove admin: \"" + user.name + "#" + user.discriminator + "\"?**")
+
+                if(resolution == None):
+                    say(3, "No response was given!\n\tTerminating the thread early!")
+                    await client.send_message(message.channel, content='**No response was given! Canceling request...**')
+                elif(resolution == True):
+                    admins.remove(user)
+                    await client.send_message(message.channel, content='**Removed  <@' + user.id + "> as a global admin!**")
+                elif(resolution == False):
+                    await client.send_message(message.channel, content='**Canceling removal!**')
+            else:
+                await client.send_message(message.channel, content='** <@' + user.id + "> is not a global admin!**")
+    else:
+        await client.send_message(message.channel, content='**Must be an admin to do this!**')
+
+    await client.delete_message(message)
 
 async def usage(message):
     global client
@@ -216,6 +312,9 @@ async def revert_config(message):
 
     if(is_admin(message.author.id)):
         config = load_config(config_path)
+        load_servers()
+        await load_admins()
+        load_emojis()
         update_default_bot_status()
         await client.send_message(message.channel, content='**Reverted bot config to settings on-file!**')
     else:
@@ -260,7 +359,7 @@ async def on_ready():
 
     say(0, 'Client logged in as the user ' + str(client.user) + '\n\tID: ' + str(client.user.id) + '\n\tBOT: ' + str(client.user.bot) + '\n\tDisplay Name: ' + str(client.user.display_name))
     load_servers()
-    load_admins()
+    await load_admins()
     load_emojis()
     await set_status(active_bot_status, discord.Status.idle)
 
@@ -278,8 +377,10 @@ async def on_message(message):
 
         if(map == 0): # addAdmin
             await set_status('Adding a new admin...', discord.Status.dnd)
+            await add_admin(message)
         elif(map == 1): # admins
             await set_status('Getting admins...', discord.Status.dnd)
+            await get_admins(message)
         elif(map == 2): # format
             await set_status('Formatting script...', discord.Status.dnd)
             await format_script(message)
@@ -291,6 +392,7 @@ async def on_message(message):
             await set_new_prefix(message)
         elif(map == 5): # removeAdmin
             await set_status('Removing old admin...', discord.Status.dnd)
+            await remove_admin(message)
         elif(map == 6): # revertConfig
             await set_status('Overwiting config...', discord.Status.dnd)
             await revert_config(message)
