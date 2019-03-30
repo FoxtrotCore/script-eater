@@ -113,7 +113,7 @@ def load_admins():
 
     for i in config['admins']:
         admins.append(client.get_user_info(i))
-        say(1, "Adding " + str(client.get_user_info(i).name))
+        # say(1, "Adding " + str(client.get_user_info(i).name))
 
 def load_emojis():
     global client
