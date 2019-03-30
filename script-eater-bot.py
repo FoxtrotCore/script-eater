@@ -373,27 +373,27 @@ async def on_message(message):
         say(0, 'Timestamp(' + str(message.timestamp) + ') UserID(' + str(message.author) + ') Message(' + message.content + ')')
 
         # Get the action map of the command suffix
-        map = get_command_map(message.content)
+        command = message_suffix(message.content)
 
-        if(map == 0): # addAdmin
+        if(command == "addAdmin"): # addAdmin
             await set_status('Adding a new admin...', discord.Status.dnd)
             await add_admin(message)
-        elif(map == 1): # admins
+        elif(command == "admins"): # admins
             await set_status('Getting admins...', discord.Status.dnd)
             await get_admins(message)
-        elif(map == 2): # format
+        elif(command == "format"): # format
             await set_status('Formatting script...', discord.Status.dnd)
             await format_script(message)
-        elif(map == 3): # help
+        elif(command == "help"): # help
             await set_status('Prepairing help...', discord.Status.dnd)
             await usage(message)
-        elif(map == 4): # prefix
+        elif(command == "prefix"): # prefix
             await set_status('Waiting for response...', discord.Status.dnd)
             await set_new_prefix(message)
-        elif(map == 5): # removeAdmin
+        elif(command == "removeAdmin"): # removeAdmin
             await set_status('Removing old admin...', discord.Status.dnd)
             await remove_admin(message)
-        elif(map == 6): # revertConfig
+        elif(command == "revertConfig"): # revertConfig
             await set_status('Overwiting config...', discord.Status.dnd)
             await revert_config(message)
         else:
