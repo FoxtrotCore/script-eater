@@ -1,6 +1,5 @@
 import os, sys
-from utilities import log
-from utilities import Mode
+from utilities import log, Mode
 
 def empty(string): return (string == '' or string == None)
 
@@ -16,7 +15,7 @@ def eat(file_name):
 
     file = open(abs_path)
     episode_number = file.readline().strip()
-    if(not episode_number.isdigit()): raise Exception("Transcript line 1: \"" + episode_number + "\" has invalid episode header!\n\tThe first line of the transcript must contain exclusively the alphanumeric episode number")
+    if(not episode_number.isdigit()): raise IOError("Transcript line 1: \"" + episode_number + "\" has invalid episode header!\n\tThe first line of the transcript must contain exclusively the alphanumeric episode number")
 
     # Padding ep number
     if(int(episode_number) < 10): episode_number = '00' + episode_number
