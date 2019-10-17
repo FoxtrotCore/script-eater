@@ -70,7 +70,7 @@ def eat(file_name):
         else: processed_lines[i] = last_badge + ": " + line
 
     # Figure out output path
-    out_path = parent_dir + '/' + str(episode_number) + '_formatted_output.txt'
+    out_path = parent_dir + '/' + str(episode_number) + '_formatted_transcript.txt'
     log(Mode.INFO, "Writing out to file: " + out_path)
 
     # Create Formatted output
