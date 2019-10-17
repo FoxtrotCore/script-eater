@@ -1,0 +1,4 @@
+{
+  "help": ["", "Stop it, get some help!"],
+  "format": ["ATTACH FILE", "Format the attached file from transcriber notation to pre-aegisub notation."]
+}

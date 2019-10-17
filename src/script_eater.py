@@ -15,7 +15,7 @@ def eat(file_name):
 
     file = open(abs_path)
     episode_number = file.readline().strip()
-    if(not episode_number.isdigit()): raise IOError("Transcript line 1: \"" + episode_number + "\" has invalid episode header!\n\tThe first line of the transcript must contain exclusively the alphanumeric episode number")
+    if(not episode_number.isdigit() or episode_number == '0'): raise IOError("Transcript: " + file_name.split('/')[-1] + " (line 1) has invalid episode header:\"" + episode_number + "\"\n\tThe first line of the transcript must contain exclusively the alphanumeric episode number")
 
     # Padding ep number
     if(int(episode_number) < 10): episode_number = '00' + episode_number
@@ -42,24 +42,18 @@ def eat(file_name):
             num = num + 1
         else: line_2 = ''
 
-        # log(Mode.WARN, "L1: " + line_1 + "\n\tL2: " + line_2 + "\n")
-
         # Process the lineup case and append or shift accordingly
         if(empty(line_1) and empty(line_2)):
-            # log(Mode.DEBUG, "EMPTY SET LINE(" + str(num) + ")")
             case = 0
         elif(not empty(line_1) and empty(line_2)):
             processed_lines.append(line_1)
-            # log(Mode.DEBUG, "SINGLE SET LINE(" + str(num) + "): " + line_1)
             case = 1
         elif(empty(line_1) and not empty(line_2)):
             line_1 = line_2
-            # log(Mode.DEBUG, "SHIFT SET LINE (" + str(num) + "): " + line_2)
             case = 2
         elif(not empty(line_1) and not empty(line_2)):
             line = line_1 + '\\N' + line_2
             processed_lines.append(line)
-            # log(Mode.DEBUG, "DOUBLE SET LINE (" + str(num) + "): " + line)
             case = 3
 
     last_badge = ''
@@ -77,6 +71,7 @@ def eat(file_name):
     out_file = open(out_path, 'w+')
     for line in processed_lines: out_file.write(line + "\n")
     out_file.close()
+    return out_path
 
 def main():
     args = sys.argv;
