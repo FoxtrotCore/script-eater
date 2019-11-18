@@ -1,20 +1,12 @@
 import os, asyncio, discord, time
+from discord import Status
 from script_eater import eat
-from utilities import log, load_json, Mode
-
-#
-# Stuff to use in runtime
-#
-bot_status = {
-    'online': discord.Status.online,
-    'offline': discord.Status.offline,
-    'idle': discord.Status.idle,
-    'dnd': discord.Status.dnd,
-}
+from ftfutils import *
+from ftfutils.utilities import log, load_json
 
 commands = load_json(os.path.abspath(os.path.join(os.path.join(os.path.realpath(__file__), os.pardir), os.pardir)) + "/config/commands.json")
 paths = load_json(os.path.abspath(os.path.join(os.path.join(os.path.realpath(__file__), os.pardir), os.pardir)) + "/config/paths.json")
-prefix = 's!'
+prefix = 'f!'
 response_timeout = 5
 confirm_emoji = "\u2705"
 deny_emoji = "\u26d4"
@@ -44,11 +36,11 @@ async def usage(message):
 
     await message.channel.send(embed=usage_msg)
 
-async def set_default_status(): await set_status(prefix + 'help | ' + DEFAULT_BOT_STATUS, status='idle')
+async def set_default_status(): await set_status(prefix + 'help | ' + DEFAULT_BOT_STATUS, status=Status.idle)
 
-async def set_status(status_message, status='online'):
+async def set_status(status_message, status=Status.online):
     activity = discord.Game(status_message)
-    await client.change_presence(status=bot_status[status], activity=activity)
+    await client.change_presence(status=status, activity=activity)
 
 async def confirm_message(message): await message.add_reaction(confirm_emoji)
 async def deny_message(message): await message.add_reaction(deny_emoji)

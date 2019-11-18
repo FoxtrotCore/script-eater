@@ -1,5 +1,6 @@
 import os, sys
-from utilities import log, Mode
+from ftfutils import Mode
+from ftfutils.utilities import log
 
 def empty(string): return (string == '' or string == None)
 
@@ -7,6 +8,7 @@ def eat(file_name):
     abs_path = os.path.abspath(file_name)
     parent_dir = os.path.dirname(abs_path)
     if(not os.path.exists(abs_path)): raise FileNotFoundError("File: " + abs_path + " does not exist!")
+
     log(Mode.INFO, "Opening file for parsing: " + abs_path)
 
     # Transcript line storage
@@ -15,7 +17,9 @@ def eat(file_name):
 
     file = open(abs_path)
     episode_number = file.readline().strip()
-    if(not episode_number.isdigit() or episode_number == '0'): raise IOError("Transcript: " + file_name.split('/')[-1] + " (line 1) has invalid episode header:\"" + episode_number + "\"\n\tThe first line of the transcript must contain exclusively the alphanumeric episode number")
+    print()
+    log(Mode.DEBUG, "ep: " + str(episode_number))
+    if(not episode_number.isdigit()): raise IOError("Transcript: " + file_name.split('/')[-1] + " (line 1) has invalid episode header:\"" + episode_number + "\"\n\tThe first line of the transcript must contain exclusively the alphanumeric episode number")
 
     # Padding ep number
     if(int(episode_number) < 10): episode_number = '00' + episode_number
